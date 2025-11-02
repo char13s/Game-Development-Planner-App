@@ -1,0 +1,325 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Development Planner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src=".idx/firebase-config.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #1a1a2e; color: #e0e0e0; }
+        .kanban-column, .calendar-day { min-height: 100px; }
+        .task-card { cursor: grab; }
+        .hidden { display: none; }
+        .calendar-day.over, .kanban-column.over { background-color: #4338ca; }
+    </style>
+</head>
+<body class="bg-gray-900 text-white p-8">
+
+    <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-80 z-100 flex justify-center items-center"><p>Connecting...</p></div>
+
+    <div id="main-content" class="hidden w-full">
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold">Game Development Planner</h1>
+                <p id="user-info" class="text-indigo-400"></p>
+            </div>
+            <div class="flex space-x-4">
+                <a href="folders.html" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">Folders</a>
+                <a href="archive.html" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg">Archive</a>
+                <button id="add-task-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg">Add Task</button>
+            </div>
+        </div>
+
+        <main class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <section class="lg:col-span-2">
+                <input type="text" id="search-input" placeholder="Search tasks by title..." class="w-full bg-gray-700 rounded p-3 mb-8 border border-gray-600 focus:border-indigo-500 outline-none">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div id="todo-column" data-status="todo" class="bg-gray-800 p-4 rounded-xl"><h2 class="text-2xl font-semibold mb-4 text-center border-b-2 border-red-500 pb-2">To Do</h2><div id="todo-tasks" class="kanban-column space-y-4"></div></div>
+                    <div id="inprogress-column" data-status="inprogress" class="bg-gray-800 p-4 rounded-xl"><h2 class="text-2xl font-semibold mb-4 text-center border-b-2 border-yellow-500 pb-2">In Progress</h2><div id="inprogress-tasks" class="kanban-column space-y-4"></div></div>
+                    <div id="done-column" data-status="done" class="bg-gray-800 p-4 rounded-xl"><h2 class="text-2xl font-semibold mb-4 text-center border-b-2 border-green-500 pb-2 flex justify-center items-center">Done <span id="done-counter" class="ml-2 bg-green-500 text-white text-sm font-bold px-2 py-1 rounded-full">0</span></h2><div id="done-tasks" class="kanban-column space-y-4"></div></div>
+                </div>
+            </section>
+            <section class="lg:col-span-1"><h2 class="text-2xl font-bold mb-4 text-center">Calendar</h2><div id="calendar-container" class="bg-gray-800 p-4 rounded-lg"></div></section>
+        </main>
+    </div>
+
+    <div id="task-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50">
+        <div class="bg-gray-800 p-8 rounded-2xl w-full max-w-md border border-gray-700">
+            <h2 id="modal-title" class="text-3xl font-bold mb-6">New Task</h2>
+            <form id="task-form">
+                <input type="hidden" id="task-id">
+                <div class="mb-4"><label for="task-title" class="block text-gray-400 mb-2">Title</label><input type="text" id="task-title" class="w-full bg-gray-700 rounded p-3" required></div>
+                <div class="mb-4"><label for="task-desc" class="block text-gray-400 mb-2">Description</label><textarea id="task-desc" class="w-full bg-gray-700 rounded p-3 h-24"></textarea></div>
+                <div class="mb-4"><label for="task-date" class="block text-gray-400 mb-2">Due Date</label><input type="date" id="task-date" class="w-full bg-gray-700 rounded p-3"></div>
+                <div class="mb-4"><label for="task-folder" class="block text-gray-400 mb-2">Folder</label><select id="task-folder" class="w-full bg-gray-700 rounded p-3"></select></div>
+                <div class="mb-6"><label for="task-status" class="block text-gray-400 mb-2">Status</label><select id="task-status" class="w-full bg-gray-700 rounded p-3"><option value="todo">To Do</option><option value="inprogress">In Progress</option><option value="done">Done</option></select></div>
+                <div class="flex justify-end space-x-4">
+                    <button type="button" id="close-modal-btn" class="bg-gray-600 hover:bg-gray-700 rounded py-2 px-4">Cancel</button>
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 rounded py-2 px-4">Save Task</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, onSnapshot, addDoc, updateDoc, serverTimestamp, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        async function main() {
+            const mainContent = document.getElementById('main-content');
+            const loadingOverlay = document.getElementById('loading-overlay');
+            const calendarContainer = document.getElementById('calendar-container');
+            const columns = { todo: document.getElementById('todo-tasks'), inprogress: document.getElementById('inprogress-tasks'), done: document.getElementById('done-tasks') };
+            const taskModal = document.getElementById('task-modal');
+            const taskForm = document.getElementById('task-form');
+            const closeModalBtn = document.getElementById('close-modal-btn');
+            const addTaskBtn = document.getElementById('add-task-btn');
+            const doneCounter = document.getElementById('done-counter');
+            const searchInput = document.getElementById('search-input');
+
+            let app, auth, db, userId, appId, tasks = [], folders = [];
+            let currentCalendarDate = new Date();
+
+            if (!firebaseConfig) return;
+
+            const setupListeners = () => {
+                onSnapshot(collection(db, `artifacts/${appId}/users/${userId}/tasks`), s => { tasks = s.docs.map(d => ({...d.data(), id: d.id})); renderAll(); }, e => console.error(e));
+                onSnapshot(collection(db, `artifacts/${appId}/users/${userId}/folders`), s => { folders = s.docs.map(d => ({...d.data(), id: d.id})); renderAll(); }, e => console.error(e));
+                searchInput.addEventListener('keyup', renderTasks);
+            };
+
+            const renderAll = () => { 
+                renderTasks(); 
+                renderCalendar(currentCalendarDate); 
+                populateFolderDropdown(); 
+            };
+
+            const renderTasks = async () => {
+                Object.values(columns).forEach(col => col.innerHTML = '');
+                let completedTasks = 0;
+                const searchTerm = searchInput.value.toLowerCase();
+                
+                const activeTasks = tasks.filter(task => task.status !== 'archived');
+
+                const taskPromises = activeTasks
+                    .filter(task => !searchTerm || task.title.toLowerCase().includes(searchTerm))
+                    .map(async task => {
+                        if (task.status === 'done') completedTasks++;
+                        if (!columns[task.status]) return null;
+                        
+                        const card = document.createElement('div');
+                        card.className = 'task-card bg-gray-700 p-4 rounded-lg shadow-lg';
+                        card.draggable = true;
+                        card.id = `task-${task.id}`;
+
+                        const folderPath = await getFolderPath(task.folderId);
+                        card.innerHTML = `${folderPath ? `<div class='text-xs font-bold text-indigo-400 mb-2'>${folderPath}</div>` : ''}<h3 class='font-bold text-lg'>${task.title}</h3>`;
+                        
+                        card.addEventListener('dragstart', e => {
+                            e.dataTransfer.setData('text/plain', task.id);
+                            e.dataTransfer.setData('application/json', JSON.stringify(task));
+                        });
+                        card.addEventListener('click', () => openModal(task));
+                        return { card, status: task.status };
+                    });
+
+                const renderedTasks = await Promise.all(taskPromises);
+                renderedTasks.forEach(taskInfo => {
+                    if (taskInfo) {
+                        columns[taskInfo.status].appendChild(taskInfo.card);
+                    }
+                });
+
+                doneCounter.innerText = completedTasks;
+            };
+            
+            const renderCalendar = (date) => {
+                calendarContainer.innerHTML = '';
+                const month = date.getMonth(), year = date.getFullYear();
+                
+                const header = document.createElement('div');
+                header.className = 'flex justify-between items-center mb-4';
+                header.innerHTML = `
+                    <button id="prev-month" class="px-2 py-1 bg-gray-700 rounded hover:bg-gray-600">&lt;</button>
+                    <h3 class="text-xl font-bold">${date.toLocaleString('default',{month:'long'})} ${year}</h3>
+                    <button id="next-month" class="px-2 py-1 bg-gray-700 rounded hover:bg-gray-600">&gt;</button>
+                `;
+                calendarContainer.appendChild(header);
+
+                document.getElementById('prev-month').addEventListener('click', () => {
+                    currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1);
+                    renderCalendar(currentCalendarDate);
+                });
+
+                document.getElementById('next-month').addEventListener('click', () => {
+                    currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1);
+                    renderCalendar(currentCalendarDate);
+                });
+
+                const firstDay = new Date(year, month, 1), lastDay = new Date(year, month + 1, 0);
+                const daysGrid = document.createElement('div');
+                daysGrid.className = 'grid grid-cols-7 gap-2';
+                for (let i=0; i<firstDay.getDay(); i++) daysGrid.appendChild(document.createElement('div'));
+                for (let d=1; d<=lastDay.getDate(); d++) {
+                    const dayEl = document.createElement('div');
+                    const dateString = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                    dayEl.className = 'calendar-day p-2 bg-gray-700 rounded-lg';
+                    dayEl.dataset.date = dateString;
+                    dayEl.innerHTML = `<span class="font-bold text-gray-300">${d}</span>`;
+                    tasks.filter(t => t.status !== 'archived' && t.date === dateString).forEach(t => {
+                        const tEl = document.createElement('div');
+                        tEl.className = 'text-xs mt-1 p-1 rounded-md text-white truncate';
+                        tEl.style.backgroundColor = ({todo:'#ef4444',inprogress:'#f59e0b',done:'#10b981'})[t.status]||'#6b7280';
+                        tEl.textContent = t.title;
+                        dayEl.appendChild(tEl);
+                    });
+                    daysGrid.appendChild(dayEl);
+                }
+                calendarContainer.appendChild(daysGrid);
+            };
+
+            const getFolderPath = async (folderId) => {
+                if (!folderId) return '';
+                let path = [];
+                let currentFolderId = folderId;
+                while(currentFolderId) {
+                    const folder = folders.find(f => f.id === currentFolderId);
+                    if (!folder) break;
+                    path.unshift(folder.name);
+                    currentFolderId = folder.parentId;
+                }
+                return path.join(' / ');
+            };
+            
+            Object.values(columns).forEach(c => {
+                const columnEl = c.parentElement;
+                columnEl.addEventListener('dragover', e => { e.preventDefault(); columnEl.classList.add('over'); e.dataTransfer.dropEffect = 'move'; });
+                columnEl.addEventListener('dragleave', e => { columnEl.classList.remove('over'); });
+                columnEl.addEventListener('drop', async e => {
+                    e.preventDefault();
+                    columnEl.classList.remove('over');
+                    const taskId = e.dataTransfer.getData('text/plain');
+                    const newStatus = columnEl.dataset.status;
+                    const task = tasks.find(t=>t.id===taskId);
+                    if (task && task.status !== newStatus) {
+                        const updateData = { status: newStatus };
+                        if (newStatus === 'done') {
+                            updateData.completedAt = serverTimestamp();
+                        }
+                        await updateDoc(doc(db, `artifacts/${appId}/users/${userId}/tasks`, taskId), updateData);
+                    }
+                });
+            });
+            
+            calendarContainer.addEventListener('dragover', e => {
+                e.preventDefault();
+                document.querySelectorAll('.calendar-day.over').forEach(d => d.classList.remove('over'));
+                const dayEl = e.target.closest('.calendar-day');
+                if (dayEl) dayEl.classList.add('over');
+            });
+
+            calendarContainer.addEventListener('dragleave', e => e.target.closest('.calendar-day')?.classList.remove('over'));
+
+            calendarContainer.addEventListener('drop', async e => {
+                e.preventDefault();
+                document.querySelectorAll('.calendar-day.over').forEach(d => d.classList.remove('over'));
+                const dayEl = e.target.closest('.calendar-day');
+                const taskData = e.dataTransfer.getData('application/json');
+                if (dayEl && taskData) {
+                    const task = JSON.parse(taskData);
+                    await updateDoc(doc(db, `artifacts/${appId}/users/${userId}/tasks`, task.id), { date: dayEl.dataset.date });
+                }
+            });
+            
+            const openModal = (task = null) => {
+                taskModal.classList.remove('hidden');
+                taskForm.reset();
+                if(task) {
+                    document.getElementById('modal-title').innerText = 'Edit Task';
+                    taskForm['task-id'].value = task.id;
+                    taskForm['task-title'].value = task.title;
+                    taskForm['task-desc'].value = task.description || '';
+                    taskForm['task-status'].value = task.status;
+                    taskForm['task-date'].value = task.date || '';
+                    taskForm['task-folder'].value = task.folderId || '';
+                } else {
+                    document.getElementById('modal-title').innerText = 'New Task';
+                }
+            };
+
+            const populateFolderDropdown = () => {
+                const select = document.getElementById('task-folder');
+                if (!select) return;
+                const currentVal = select.value;
+                select.innerHTML = '<option value="">No Folder</option>';
+                folders.sort((a,b) => a.name.localeCompare(b.name)).forEach(f => select.innerHTML += `<option value="${f.id}">${f.name}</option>`);
+                select.value = currentVal;
+            };
+
+            addTaskBtn.addEventListener('click', () => openModal());
+            closeModalBtn.addEventListener('click', () => taskModal.classList.add('hidden'));
+
+            taskModal.addEventListener('click', (e) => {
+                if (e.target === taskModal) {
+                    taskForm.requestSubmit();
+                }
+            });
+
+            taskForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const taskId = taskForm['task-id'].value;
+                const title = taskForm['task-title'].value;
+                if (!title) return;
+                
+                const data = { 
+                    title: title,
+                    description: taskForm['task-desc'].value,
+                    status: taskForm['task-status'].value, 
+                    date: taskForm['task-date'].value || null,
+                    folderId: taskForm['task-folder'].value || null
+                };
+
+                if (taskId) {
+                    const existingTask = tasks.find(t => t.id === taskId);
+                    if (existingTask.status !== 'done' && data.status === 'done') {
+                        data.completedAt = serverTimestamp();
+                    }
+                    await updateDoc(doc(db, `artifacts/${appId}/users/${userId}/tasks`, taskId), data);
+                } else {
+                    if (data.status === 'done') {
+                         data.completedAt = serverTimestamp();
+                    }
+                    await addDoc(collection(db, `artifacts/${appId}/users/${userId}/tasks`), { ...data, createdAt: serverTimestamp() });
+                }
+                taskModal.classList.add('hidden');
+            });
+
+            try {
+                app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+                appId = firebaseConfig.appId;
+                onAuthStateChanged(auth, user => {
+                    if (user) { 
+                        userId = user.uid; 
+                        document.getElementById('user-info').innerText = `User: ${user.isAnonymous ? `Guest (${userId.substring(0,6)})` : user.email}`;
+                        mainContent.classList.remove('hidden'); 
+                        loadingOverlay.classList.add('hidden'); 
+                        setupListeners(); 
+                    } else { 
+                        signInAnonymously(auth).catch(e => console.error(e)); 
+                    }
+                });
+            } catch (e) { console.error(e); }
+        }
+
+        main();
+    </script>
+</body>
+</html>

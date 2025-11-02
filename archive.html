@@ -1,0 +1,111 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Archived Tasks</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src=".idx/firebase-config.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #1a1a2e; color: #e0e0e0; }
+    </style>
+</head>
+<body class="bg-gray-900 text-white p-8">
+
+    <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-80 z-100 flex justify-center items-center"><p>Connecting...</p></div>
+
+    <div id="main-content" class="hidden w-full">
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold">Archived Tasks</h1>
+                <p id="user-info" class="text-indigo-400">A history of your completed work.</p>
+            </div>
+            <a href="index.html" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg">Back to Planner</a>
+        </div>
+
+        <main id="archive-container" class="bg-gray-800 p-6 rounded-xl space-y-4"></main>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        async function main() {
+            const mainContent = document.getElementById('main-content');
+            const loadingOverlay = document.getElementById('loading-overlay');
+            const archiveContainer = document.getElementById('archive-container');
+
+            let app, auth, db, userId, appId;
+
+            if (!firebaseConfig) return;
+
+            const setupListeners = () => {
+                onSnapshot(collection(db, `artifacts/${appId}/users/${userId}/tasks`),
+                    s => renderArchived(s.docs.map(d => ({...d.data(), id: d.id}))),
+                    e => console.error(e)
+                );
+            };
+
+            const renderArchived = (tasks) => {
+                archiveContainer.innerHTML = '';
+                const archivedTasks = tasks.filter(t => t.status === 'archived').sort((a,b) => b.completedAt?.toMillis() - a.completedAt?.toMillis());
+
+                if (archivedTasks.length === 0) {
+                    archiveContainer.innerHTML = '<p class="text-gray-400">No archived tasks yet.</p>';
+                    return;
+                }
+
+                archivedTasks.forEach(task => {
+                    const card = document.createElement('div');
+                    card.className = 'bg-gray-700 p-4 rounded-lg flex justify-between items-center';
+                    
+                    const completedDate = task.completedAt ? new Date(task.completedAt.toMillis()).toLocaleDateString() : 'N/A';
+
+                    card.innerHTML = `
+                        <div>
+                            <h3 class='font-bold text-lg'>${task.title}</h3>
+                            <p class="text-sm text-gray-400">Completed on: ${completedDate}</p>
+                        </div>
+                        <button data-id="${task.id}" class="unarchive-btn bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">Unarchive</button>
+                    `;
+                    archiveContainer.appendChild(card);
+                });
+            };
+
+            archiveContainer.addEventListener('click', async (e) => {
+                if (e.target.classList.contains('unarchive-btn')) {
+                    const taskId = e.target.dataset.id;
+                    await updateDoc(doc(db, `artifacts/${appId}/users/${userId}/tasks`, taskId), {
+                        status: 'todo'
+                    });
+                }
+            });
+
+            try {
+                app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+                appId = firebaseConfig.appId;
+                onAuthStateChanged(auth, user => {
+                    if (user) { 
+                        userId = user.uid; 
+                        document.getElementById('user-info').innerText = `User: ${user.isAnonymous ? `Guest (${userId.substring(0,6)})` : user.email}`;
+                        mainContent.classList.remove('hidden'); 
+                        loadingOverlay.classList.add('hidden'); 
+                        setupListeners(); 
+                    } else { 
+                        signInAnonymously(auth).catch(e => console.error(e)); 
+                    }
+                });
+            } catch (e) { console.error(e); }
+        }
+
+        main();
+    </script>
+</body>
+</html>
