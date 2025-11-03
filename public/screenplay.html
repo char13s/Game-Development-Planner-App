@@ -1,0 +1,95 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Screenplay Editor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        #screenplay-container {
+            font-family: 'Courier New', Courier, monospace;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+            background-color: #f8f8f8;
+            color: #333;
+            line-height: 1.5;
+        }
+        .scene-heading {
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-top: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .action {
+            margin-bottom: 1rem;
+        }
+        .character {
+            text-align: center;
+            margin-bottom: 0.5rem;
+        }
+        .dialogue {
+            padding: 0 2rem;
+            margin-bottom: 1rem;
+        }
+        .parenthetical {
+            text-align: center;
+            color: #888;
+            margin-bottom: 1rem;
+        }
+        #context-menu { position: absolute; z-index: 1000; background-color: #2c2c44; border: 1px solid #4f4f7a; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); padding: 8px; display: none; }
+        #context-menu div { padding: 8px 12px; cursor: pointer; border-radius: 4px; color: white; }
+        #context-menu div:hover { background-color: #4f4f7a; }
+        .hidden { display: none; }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@formkit/auto-animate@0.8.2/dist/index.min.js"></script>
+</head>
+<body class="bg-gray-900 text-white min-h-screen p-8">
+
+    <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-80 z-100 flex justify-center items-center"><p>Connecting...</p></div>
+
+    <div id="main-content" class="hidden">
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold">Screenplay Editor</h1>
+                <p id="user-info" class="text-indigo-400"></p>
+            </div>
+            <div class="flex space-x-4 items-center">
+                <a href="index.html" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">Planner</a>
+                <a href="flow.html" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg">Flow</a>
+                <a href="folders.html" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg">Folders</a>
+                <a href="archive.html" class="bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-4 rounded-lg">Archive</a>
+                <button id="sign-out-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg">Sign Out</button>
+            </div>
+        </div>
+
+        <main id="screenplay-container" class="bg-white text-black p-8 rounded-lg"></main>
+    </div>
+
+    <div id="context-menu"></div>
+
+    <div id="input-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50">
+        <div class="bg-gray-800 p-8 rounded-2xl w-full max-w-md border border-gray-700">
+            <h2 id="input-modal-title" class="text-3xl font-bold mb-6"></h2>
+            <form id="input-form">
+                <div class="mb-4">
+                    <label id="input-modal-label" for="input-modal-field" class="block text-gray-400 mb-2"></label>
+                    <textarea id="input-modal-field" class="w-full bg-gray-700 rounded p-3 h-32" required></textarea>
+                </div>
+                <div class="flex justify-end space-x-4">
+                    <button type="button" id="close-input-modal-btn" class="bg-gray-600 hover:bg-gray-700 rounded py-2 px-4">Cancel</button>
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 rounded py-2 px-4">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script type="module" src="js/screenplay.js"></script>
+
+</body>
+</html>

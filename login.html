@@ -1,0 +1,46 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loading...</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-gray-900 text-white flex items-center justify-center h-screen">
+    <div class="text-center">
+        <h2 class="text-3xl font-bold mb-6">Loading Your Planner...</h2>
+        <p>You will be redirected shortly.</p>
+    </div>
+
+    <script type="module">
+        import { firebaseConfig } from './public/firebase-config.js';
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // User is already signed in, redirect to index.html
+                window.location.href = "index.html";
+            } else {
+                // User is not signed in, sign in anonymously
+                signInAnonymously(auth)
+                    .then(() => {
+                        // Redirect to index.html after successful anonymous sign-in
+                        window.location.href = "index.html";
+                    })
+                    .catch((error) => {
+                        console.error("Anonymous sign-in failed:", error);
+                        alert("Could not sign you in. Please try again later.");
+                    });
+            }
+        });
+    </script>
+</body>
+</html>

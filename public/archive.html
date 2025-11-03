@@ -1,0 +1,41 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Archived Tasks</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@formkit/auto-animate@0.8.2/dist/index.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #1a1a2e; color: #e0e0e0; }
+    </style>
+</head>
+<body class="bg-gray-900 text-white p-8">
+
+    <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-80 z-100 flex justify-center items-center"><p>Connecting...</p></div>
+
+    <div id="main-content" class="hidden w-full">
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold">Archived Tasks</h1>
+                <p id="user-info" class="text-indigo-400"></p>
+            </div>
+            <div class="flex space-x-4 items-center">
+                <a href="index.html" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">Planner</a>
+                <a href="flow.html" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg">Flow</a>
+                <a href="folders.html" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg">Folders</a>
+                <a href="screenplay.html" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg">Screenplay</a>
+                <button id="sign-out-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg">Sign Out</button>
+            </div>
+        </div>
+
+        <main id="archive-container" class="bg-gray-800 p-6 rounded-xl space-y-4"></main>
+    </div>
+
+    <script type="module" src="js/archive.js"></script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+{
+  "name": "myown",
+  "version": "1.0.0",
+  "description": "A simple game development planner.",
+  "main": "index.js",
+  "scripts": {
+    "generate-config": "node config-generator.js",
+    "dev": "npm run generate-config && http-server .",
+    "deploy": "firebase deploy --only hosting"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "http-server": "^14.1.1"
+  },
+  "devDependencies": {
+    "firebase-tools": "^13.7.5"
+  }
+}
