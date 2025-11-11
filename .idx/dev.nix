@@ -6,17 +6,16 @@
     pkgs.firebase-tools
   ];
   env = {
-    # This is not used by the client-side app, but keeping it is harmless
-    FIREBASE_CONFIG = ''
+    FIREBASE_CONFIG = '''
       {
-        apiKey: "AIzaSyBqCA96Xa2KZnFvCcFcBiM4kesb_1_H_tI",
-        authDomain: "my-planner-v3.firebaseapp.com",
-        projectId: "my-planner-v3",
-        storageBucket: "my-planner-v3.firebasestorage.app",
-  messagingSenderId: "1045901202322",
-  appId: "1:1045901202322:web:08f00fc36e9916db00e74b"
+        apiKey: "AIzaSyBCdE4gHtnQYOX6Dht99CR5tTYMtwWNBSg",
+        authDomain: "myown-36648480-fbedd.firebaseapp.com",
+        projectId: "myown-36648480-fbedd",
+        storageBucket: "myown-36648480-fbedd.firebasestorage.app",
+        messagingSenderId: "497878218081",
+        appId: "1:497878218081:web:eaa861fb10dae0fa62c120"
       }
-    '';
+    ''';
   };
   idx = {
     extensions = [
@@ -32,10 +31,7 @@
         };
       };
     };
-    workspace = {
-      onCreate = {
-        default.openFiles = [ ".idx/dev.nix" "index.html" ];
-      };
-    };
+    # openFiles tells the workspace which files to open automatically on startup.
+    openFiles = [ ".idx/dev.nix" "index.html" ];
   };
 }
