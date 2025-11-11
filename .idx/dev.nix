@@ -6,16 +6,17 @@
     pkgs.firebase-tools
   ];
   env = {
-    FIREBASE_CONFIG = '''
+    # Ensure this is a valid JSON string as previously advised
+    FIREBASE_CONFIG = ''
       {
-        apiKey: "AIzaSyBCdE4gHtnQYOX6Dht99CR5tTYMtwWNBSg",
-        authDomain: "myown-36648480-fbedd.firebaseapp.com",
-        projectId: "myown-36648480-fbedd",
-        storageBucket: "myown-36648480-fbedd.firebasestorage.app",
-        messagingSenderId: "497878218081",
-        appId: "1:497878218081:web:eaa861fb10dae0fa62c120"
+        "apiKey": "AIzaSyBCdE4gHtnQYOX6Dht99CR5tTYMtwWNBSg",
+        "authDomain": "myown-36648480-fbedd.firebaseapp.com",
+        "projectId": "myown-36648480-fbedd",
+        "storageBucket": "myown-36648480-fbedd.firebasestorage.app",
+        "messagingSenderId": "497878218081",
+        "appId": "1:497878218081:web:eaa861fb10dae0fa62c120"
       }
-    ''';
+    '';
   };
   idx = {
     extensions = [
@@ -31,7 +32,7 @@
         };
       };
     };
-    # openFiles tells the workspace which files to open automatically on startup.
-    openFiles = [ ".idx/dev.nix" "index.html" ];
+    # The 'openFiles' attribute was removed here because it is not supported
+    # by the underlying configuration schema, which caused the "Unknown attr" error.
   };
 }
